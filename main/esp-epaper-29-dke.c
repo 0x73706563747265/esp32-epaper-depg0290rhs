@@ -58,7 +58,7 @@ void e_paper_task(void *pvParameter)
 
    
     while(1){
-        ESP_LOGI(TAG, "Before ePaper driver init, heap: %d", esp_get_free_heap_size());
+        ESP_LOGI(TAG, "Before ePaper driver init, heap: %lu", esp_get_free_heap_size());
         device = iot_epaper_create(NULL, &epaper_conf);
         iot_epaper_set_rotate(device, E_PAPER_ROTATE_90);
      
