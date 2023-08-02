@@ -54,7 +54,7 @@ typedef struct {
     epaper_conf_t pin;      /* EPD properties */
     epaper_paint_t paint;   /* Paint properties */
     epaper_dc_t dc;
-    xSemaphoreHandle spi_mux;
+    SemaphoreHandle_t spi_mux;
 } epaper_dev_t;
 
 /* This function is called (in irq context!) just before a transmission starts.
@@ -126,15 +126,15 @@ static void iot_epaper_paint_init(epaper_handle_t dev, unsigned char* bw_image, 
 
 static void iot_epaper_gpio_init(epaper_conf_t * pin)
 {
-    gpio_pad_select_gpio(pin->reset_pin);
+    esp_rom_gpio_pad_select_gpio(pin->reset_pin);
     gpio_set_direction(pin->reset_pin, GPIO_MODE_OUTPUT);
     gpio_set_level(pin->reset_pin, pin->rst_active_level);
-    gpio_pad_select_gpio(pin->dc_pin);
+    esp_rom_gpio_pad_select_gpio(pin->dc_pin);
     gpio_set_direction(pin->dc_pin, GPIO_MODE_OUTPUT);
     gpio_set_level(pin->dc_pin, 1);
-    ets_delay_us(10000);
+    esp_rom_delay_us(10000);
     gpio_set_level(pin->dc_pin, 0);
-    gpio_pad_select_gpio(pin->busy_pin);
+    esp_rom_gpio_pad_select_gpio(pin->busy_pin);
     gpio_set_direction(pin->busy_pin, GPIO_MODE_INPUT);
     gpio_set_pull_mode(pin->busy_pin, GPIO_PULLUP_ONLY);
 }
@@ -603,7 +603,7 @@ void iot_epaper_wait_idle(epaper_handle_t dev)
 {
     epaper_dev_t* device = (epaper_dev_t*) dev;
     while (gpio_get_level((gpio_num_t) device->pin.busy_pin) == device->pin.busy_active_level) {
-        vTaskDelay(10 / portTICK_RATE_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
@@ -612,9 +612,9 @@ void iot_epaper_reset(epaper_handle_t dev)
     epaper_dev_t* device = (epaper_dev_t*) dev;
     xSemaphoreTakeRecursive(device->spi_mux, portMAX_DELAY);
     gpio_set_level((gpio_num_t) device->pin.reset_pin, (~(device->pin.rst_active_level)) & 0x1);
-    ets_delay_us(200);
+    esp_rom_delay_us(200);
     gpio_set_level((gpio_num_t) device->pin.reset_pin, (device->pin.rst_active_level) & 0x1);             //module reset
-    ets_delay_us(200);
+    esp_rom_delay_us(200);
     gpio_set_level((gpio_num_t) device->pin.reset_pin, (~(device->pin.rst_active_level)) & 0x1);
     iot_epaper_wait_idle(dev);
     xSemaphoreGiveRecursive(device->spi_mux);
